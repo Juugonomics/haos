@@ -1,5 +1,5 @@
 blueprint:
-  name: mslight v1.1
+  name: mslight v1.2
   domain: automation
   input:
     light:
@@ -19,7 +19,7 @@ blueprint:
           domain: binary_sensor
     initial_delay:
       name: Initial Delay (milliseconds)
-      default: 100
+      default: 50
       selector:
         number:
           min: 0
@@ -35,7 +35,7 @@ blueprint:
           unit_of_measurement: seconds
     sleep_delay:
       name: Sleep Mode Delay (seconds)
-      default: 60
+      default: 120
       selector:
         number:
           min: 0
@@ -51,12 +51,10 @@ trigger:
 condition: []
 
 action:
+  - condition: state
+    entity_id: !input sleep_switch
+    state: "on"
   - choose:
-      - conditions:
-          - condition: state
-            entity_id: !input sleep_switch
-            state: "off"
-        sequence: []
       - conditions:
           - condition: state
             entity_id: !input light
@@ -67,13 +65,9 @@ action:
               entity_id: !input light
           - delay:
               milliseconds: !input initial_delay
-          - service: switch.turn_off
-            target:
-              entity_id: !input sleep_switch
-    default:
-      - service: switch.turn_off
-        target:
-          entity_id: !input sleep_switch
+  - service: switch.turn_off
+    target:
+      entity_id: !input sleep_switch
   - wait_for_trigger:
       - platform: state
         entity_id: !input occupancy_sensor
