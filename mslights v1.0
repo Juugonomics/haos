@@ -1,0 +1,84 @@
+blueprint:
+  name: mslights v1.0
+  domain: automation
+  input:
+    light:
+      name: Light
+      selector:
+        entity:
+          domain: light
+    sleep_switch:
+      name: Sleep Mode Switch
+      selector:
+        entity:
+          domain: switch
+    occupancy_sensor:
+      name: Occupancy Sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    initial_delay:
+      name: Initial Delay (milliseconds)
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 3000
+          unit_of_measurement: milliseconds
+    off_delay:
+      name: Off Delay (seconds)
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 600
+          unit_of_measurement: seconds
+    sleep_delay:
+      name: Sleep Mode Delay (seconds)
+      default: 60
+      selector:
+        number:
+          min: 0
+          max: 600
+          unit_of_measurement: seconds
+
+trigger:
+  - platform: state
+    entity_id: !input occupancy_sensor
+    from: "off"
+    to: "on"
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input light
+            state: "off"
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input light
+          - delay:
+              milliseconds: !input initial_delay
+  - service: switch.turn_off
+    target:
+      entity_id: !input sleep_switch
+  - wait_for_trigger:
+      - platform: state
+        entity_id: !input occupancy_sensor
+        from: "on"
+        to: "off"
+  - delay:
+      seconds: !input off_delay
+  - service: switch.turn_on
+    target:
+      entity_id: !input sleep_switch
+  - delay:
+      seconds: !input sleep_delay
+  - service: light.turn_off
+    target:
+      entity_id: !input light
+
+mode: restart
