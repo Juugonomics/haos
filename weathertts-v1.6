@@ -38,7 +38,7 @@ action:
   - variables:
       weather_entity: !input weather_entity
       forecast: "{{ daily[weather_entity].forecast }}"
-  - service: tts.edge_say
+  - service: tts.edge_tts_say
     data:
       entity_id: !input notify_device
       message: >-
