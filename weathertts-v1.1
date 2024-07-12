@@ -1,0 +1,54 @@
+blueprint:
+  name: Weather forecast TTS notification
+  domain: automation
+  input:
+    notify_device:
+      selector:
+        entity:
+          domain: media_player
+    weather_entity:
+      selector:
+        entity:
+          domain: weather
+    time:
+      selector:
+        time:
+    notify_message:
+      default:
+        - condition
+        - temperature
+        - precipitation
+      selector:
+        object:
+    tomorrow_message:
+      default: 내일
+trigger:
+  - platform: time
+    at: !input time
+action:
+  - service: weather.get_forecasts
+    data:
+      type: daily
+    target:
+      entity_id: !input weather_entity
+    response_variable: daily
+  - variables:
+      weather_entity: !input weather_entity
+      forecast: "{{ daily[weather_entity].forecast }}"
+  - service: tts.edge_say
+    data:
+      entity_id: !input notify_device
+      message: >-
+        안녕하세요! 오늘의 날씨 예보를 알려드릴게요.
+
+        {% set weather = weather_entity %} {% for message in notify_message %}
+          {% if "condition" in message %}오늘은 {{ (forecast[0].condition).capitalize() }} 날씨가 예상됩니다.{% endif %}
+          {% if "temperature" in message %} 기온은 최고 {{forecast[0].temperature}}도, 최저 {{forecast[0].templow}}도입니다.{% endif %}
+          {% if "precipitation" in message %} 강수 확률은 {{forecast[0].precipitation}}%입니다.{% endif %}
+        {% endfor %}
+
+        {% if tomorrow_message == '내일' %}내일은 {{ (forecast[1].condition).capitalize() }} 날씨가 예상되고, 기온은 최고 {{forecast[1].temperature}}도, 최저 {{forecast[1].templow}}도입니다. 강수 확률은 {{forecast[1].precipitation}}%입니다.{% endif %}
+
+        좋은 하루 되세요!
+alias: 날씨 예보 TTS 알림
+description: ""
