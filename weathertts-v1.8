@@ -1,0 +1,62 @@
+blueprint:
+  name: Weather forecast TTS notification
+  domain: automation
+  input:
+    notify_device:
+      selector:
+        entity:
+          domain: media_player
+    weather_entity:
+      selector:
+        entity:
+          domain: weather
+    time:
+      selector:
+        time:
+    notify_message:
+      default:
+        - condition
+        - temperature
+        - precipitation
+      selector:
+        object:
+    tomorrow_message:
+      default: 내일
+trigger:
+  - platform: time
+    at: !input time
+action:
+  - service: weather.get_forecasts
+    data:
+      type: daily
+    target:
+      entity_id: !input weather_entity
+    response_variable: daily
+  - variables:
+      weather_entity: !input weather_entity
+      forecast: "{{ daily[weather_entity].forecast }}"
+      icon: >-
+        {% set cond_now = forecast[0].condition %}
+        {% if cond_now == 'cloudy' %}mdi:clouds{% elif cond_now == 'fog' %}mdi:weather-fog{% elif cond_now == 'hail' %}mdi:weather-hail{% elif cond_now == 'lightning' %}mdi:weather-lightning{% elif cond_now == 'lightning-rainy' %}mdi:weather-lightning-rainy{% elif cond_now == 'partlycloudy' %}mdi:weather-partly-cloudy{% elif cond_now == 'pouring' %}mdi:weather-pouring{% elif cond_now == 'rainy' %}mdi:weather-rainy{% elif cond_now == 'snowy' %}mdi:weather-snowy{% elif cond_now == 'snowy-rainy' %}mdi:weather-snowy-rainy{% elif cond_now == 'sunny' %}mdi:weather-sunny{% elif cond_now == 'windy' %}mdi:weather-windy{% elif cond_now == 'windy-variant' %}mdi:weather-windy-variant{% elif cond_now == 'exceptional' %}mdi:cloud-alert{% else %}mdi:sun-thermometer{% endif %}
+  - service: tts.edge_say_say
+    data:
+      entity_id: !input notify_device
+      message: >-
+        {% set weather = weather_entity %}
+
+        오늘 날씨 예보입니다. 
+        {% for message in notify_message %}
+          {% if "condition" in message %}날씨: {{ (forecast[0].condition).capitalize() }}{% endif %}
+          {% if "temperature" in message %}기온: {{ forecast[0].temperature }}도 // 최저 기온: {{ forecast[0].templow }}도{% endif %}
+          {% if "precipitation" in message %}강수 확률: {{ forecast[0].precipitation }}mm{% endif %}
+          {% if "wind" in message %}풍속: {{ forecast[0].wind_speed }} {{ state_attr(weather,'wind_speed_unit') }} // 풍향: {{ forecast[0].wind_bearing }}{% endif %}
+        {% endfor %}
+
+        {% if tomorrow_message == '내일' %}
+          내일 날씨 예보입니다. 
+          날씨: {{ (forecast[1].condition).capitalize() }}, 기온: {{ forecast[1].temperature }}도 // 최저 기온: {{ forecast[1].templow }}도, 강수 확률: {{ forecast[1].precipitation }}mm
+        {% endif %}
+    data:
+      notification_icon: "{{ icon }}"
+alias: 날씨 예보 TTS 알림
+description: ""
