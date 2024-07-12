@@ -22,9 +22,17 @@ blueprint:
         object:
     tomorrow_message:
       default: 내일
+    trigger_button:
+      selector:
+        entity:
+          domain: input_boolean
+          device_class: button
 trigger:
   - platform: time
     at: !input time
+  - platform: state
+    entity_id: !input trigger_button
+    to: 'on'
 action:
   - service: weather.get_forecasts
     data:
